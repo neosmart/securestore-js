@@ -1,18 +1,28 @@
-import { SecretsManager, KeySource } from './SecureStore.js';
-import fs from 'node:fs';
+import * as SecureStore from "./SecureStore.js";
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 
-const vaultJson = fs.readFileSync('vault.json', 'utf8');
-{
-	let manager = await SecretsManager.load(vaultJson, KeySource.fromPassword('password123'));
-
-	let apiKey = await manager.get('foo');
-	console.log(apiKey);
+declare module "./SecureStore.js" {
+	namespace KeySource {
+		/**
+		 * Derive decryption keys from the specified file path
+		 */
+		export function fromKeyFile(path: string): Promise<KeySource>;
+	}
 }
 
-{
-	const vaultKey = fs.readFileSync('../secrets.key', 'utf8');
-	let manager = await SecretsManager.load(vaultJson, KeySource.fromKey(vaultKey));
-
-	let apiKey = await manager.get('foo');
-	console.log(apiKey);
+SecureStore.KeySource.fromKeyFile = async (path: string) => {
+	if (!existsSync(path)) {
+		throw new Error(`SecureStore key file not found at ${path}`);
+	}
+	try {
+		const key = await fs.readFile(path, "utf8");
+		return SecureStore.KeySource.fromKey(key);
+	} catch (err) {
+		throw new Error(`Unable to load SecureStore key from path ${path}`, { cause: err });
+	}
 }
+
+// Re-export everything exported by SecureStore.js, but use patched versions
+// from above where applicable.
+export * from "./SecureStore.js";
