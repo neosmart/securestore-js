@@ -1,8 +1,14 @@
 import * as SecureStore from "./SecureStore.js";
+import { SecretsManager, KeySource } from "./SecureStore.js";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 declare module "./SecureStore.js" {
+	// Make the type deductions "just work" based off of browser vs Node/Bun:
+	interface EnvTypes {
+		hasFs: true,
+	}
+
 	// Add static KeySource method to load key from file
 	namespace KeySource {
 		/**
@@ -11,20 +17,12 @@ declare module "./SecureStore.js" {
 		export function fromKeyFile(path: string): Promise<KeySource>;
 	}
 
-	// Add static SecretsManager methods to load vault from file
+	// Add new fromFile() entrypoint and extend the others with AuthOptionsExt variants
 	namespace SecretsManager {
 		/**
-		 * Load SecureStore vault from the specified file path, decrypting with the provided password.
+		 * Load a SecureStore vault with the decoded contents of the (JSON) SecureStore container.
 		 */
-		export function fromPathWithPassword(vaultPath: string, password: string): Promise<SecretsManager>;
-		/**
-		 * Load SecureStore vault from the specified file path, decrypting with the provided decryption key.
-		 */
-		export function fromPathWithKey(vaultPath: string, key: Uint8Array | string): Promise<SecretsManager>;
-		/**
-		 * Load SecureStore vault from the specified file path, decrypting with the decryption key at the specified path.
-		 */
-		export function fromPathWithKeyFile(vaultPath: string, keyPath: string): Promise<SecretsManager>;
+		export function fromFile(vaultPath: string, auth: AuthOptions): Promise<SecretsManager>;
 	}
 }
 
@@ -42,32 +40,31 @@ SecureStore.KeySource.fromKeyFile = async (path: string) => {
 	return SecureStore.KeySource.fromKey(keyData);
 };
 
-const loadVault = async (path: string) => {
+SecretsManager.fromFile = async (path, auth) => {
 	if (!existsSync(path)) {
 		throw new Error(`SecureStore vault not found at ${path}`);
 	}
 
+	let vaultJson: string;
 	try {
-		return await readFile(path, "utf-8");
+		vaultJson = await readFile(path, "utf-8");
 	} catch (err) {
 		throw new Error(`Error loading SecureStore vault from path ${path}`, { cause: err });
 	}
+	return SecureStore.SecretsManager.fromJSON(vaultJson, <any> auth);
 };
 
-SecureStore.SecretsManager.fromPathWithPassword = async (vaultPath, password) => {
-	const vaultData = await loadVault(vaultPath);
-	return SecureStore.SecretsManager.loadWithPassword(vaultData, password);
-};
-
-SecureStore.SecretsManager.fromPathWithKey = async (vaultPath, key) => {
-	const vaultData = await loadVault(vaultPath);
-	return SecureStore.SecretsManager.loadWithKey(vaultData, key);
-};
-
-SecureStore.SecretsManager.fromPathWithKeyFile = async (vaultPath, keyPath) => {
-	const vaultData = await loadVault(vaultPath);
-	const vaultKey = await SecureStore.KeySource.fromKeyFile(keyPath);
-	return SecureStore.SecretsManager.load(vaultData, vaultKey);
+// @ts-expect-error forcibly access private member to patch
+const baseAuthResolve = SecretsManager.resolveAuthOptions;
+// @ts-expect-error forcibly access private member to patch
+SecretsManager.resolveAuthOptions = async (auth: SecureStore.AuthOptions) => {
+	let keySource: KeySource;
+	if (auth.keyFile) {
+		keySource = await KeySource.fromKeyFile(auth.keyFile);
+	} else {
+		keySource = await baseAuthResolve(auth);
+	}
+	return keySource;
 };
 
 // Re-export everything exported by SecureStore.js, but use patched versions

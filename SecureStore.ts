@@ -78,6 +78,19 @@ export class KeySource {
     }
 }
 
+// Used to control node/bun type injection, overridden in `SecureStoreExt.ts`
+export interface EnvTypes {}
+
+type KeyFileOption = EnvTypes extends { hasFs: true }
+    ? { keyFile: string; password?: never; key?: never; keySource?: never }
+    : never;
+
+export type AuthOptions =
+    | { password: string; key?: never; keySource?: never; keyFile?: never }
+    | { key: Uint8Array; password?: never; keySource?: never; keyFile?: never }
+    | { keySource: KeySource; password?: never; key?: never; keyFile?: never }
+    | KeyFileOption; // `never` in the browser
+
 /**
  * SecretsManager instances are used to load and decrypt secrets from SecureStore vaults.
  */
@@ -95,30 +108,51 @@ export class SecretsManager {
     }
 
     /**
-     * Load a SecureStore vault from a JSON string or object, decrypting with the provided password.
+     * Load a SecureStore vault with the contents of the (JSON) SecureStore container.
      */
-    public static async loadWithPassword(vaultData: string | VaultData, password: string): Promise<SecretsManager> {
-        return await SecretsManager.load(vaultData, KeySource.fromPassword(password));
+    public static async fromJSON(vaultJson: string, auth: AuthOptions): Promise<SecretsManager> {
+        let vaultData: VaultData;
+        try {
+            vaultData = JSON.parse(vaultJson);
+        } catch {
+            throw new Error("Invalid SecureStore vault JSON provided!");
+        }
+        return await SecretsManager.load(vaultData, auth);
     }
 
     /**
-     * Load a SecureStore vault from a JSON string or object, decrypting with the provided decryption key.
+     * Load a SecureStore vault with the decoded contents of the (JSON) SecureStore container.
      */
-    public static async loadWithKey(vaultData: string | VaultData, key: Uint8Array | string): Promise<SecretsManager> {
-        return await SecretsManager.load(vaultData, KeySource.fromKey(key));
+    public static async fromObject(vaultData: VaultData, auth: AuthOptions): Promise<SecretsManager> {
+        return await SecretsManager.load(vaultData, auth);
     }
 
     /**
-     * Load a SecureStore vault from a JSON string or object.
+     * Extract a `KeySource` from the provided `AuthOptions`
      */
-    public static async load(vaultData: string | VaultData, keySource: KeySource): Promise<SecretsManager> {
-        const vault: SafeVaultData = typeof vaultData === 'string' ? JSON.parse(vaultData) : vaultData;
+    private static async resolveAuthOptions(auth: AuthOptions): Promise<KeySource> {
+        let keySource: KeySource;
+        if (auth.password) {
+            keySource = KeySource.fromPassword(auth.password);
+        } else if (auth.key) {
+            keySource = KeySource.fromKey(auth.key);
+        } else if (auth.keySource) {
+            keySource = auth.keySource;
+        } else {
+            throw new Error("Invalid, missing, or unrecognized SecureStore decryption method!");
+        }
+        return keySource;
+    }
+
+    private static async load(vaultData: VaultData, auth: AuthOptions): Promise<SecretsManager> {
+        const vault: SafeVaultData = vaultData;
 
         if ((vault.version ?? 0) !== 3) {
             throw new Error("Unsupported SecureStore version. This library supports v3.");
         }
 
         // Derive or load the 32-byte master key
+        const keySource = await SecretsManager.resolveAuthOptions(auth);
         const masterKeyBytes = await this.resolveMasterKey(keySource, vault.iv ?? null);
 
         if (masterKeyBytes.byteLength < MASTER_KEY_LEN) {
