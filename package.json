@@ -1,14 +1,20 @@
 {
   "name": "@neosmart/securestore",
   "version": "1.0.0",
-  "exports": {
-    ".": {
-      "import": "dist/SecureStore.js",
-      "types": "dist/SecureStore.d.ts"
-    }
-  },
   "files": ["dist/SecureStore*"],
   "type": "module",
+  "exports": {
+    ".": {
+      "node": {
+        "types": "./dist/SecureStoreExt.d.ts",
+        "import": "./dist/SecureStoreExt.js"
+      },
+      "default": {
+        "types": "./dist/SecureStore.d.ts",
+        "import": "./dist/SecureStore.js"
+      }
+    }
+  },
   "keywords": [
     "SecureStore",
     "encryption",
@@ -28,8 +34,8 @@
   },
   "funding": "https://mqudsi.com/donate/",
   "scripts": {
-      "prepublishOnly": "npm run build",
-      "build": "tsc"
+    "prepublishOnly": "npm run build",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^20",
