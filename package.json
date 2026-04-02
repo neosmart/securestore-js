@@ -1,0 +1,41 @@
+{
+  "name": "@neosmart/securestore",
+  "version": "1.0.0",
+  "exports": {
+    ".": {
+      "import": "dist/SecureStore.js",
+      "types": "dist/SecureStore.d.ts"
+    }
+  },
+  "files": ["dist/SecureStore*"],
+  "type": "module",
+  "keywords": [
+    "SecureStore",
+    "encryption",
+    "secrets"
+  ],
+  "homepage": "https://neosmart.net/SecureStore/",
+  "bugs": "https://github.com/neosmart/securestore-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neosmart/securestore-js.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Mahmoud Al-Qudsi",
+    "email": "mqudsi@neosmart.net",
+    "url": "https://github.com/mqudsi"
+  },
+  "funding": "https://mqudsi.com/donate/",
+  "scripts": {
+      "prepublishOnly": "npm run build",
+      "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^6"
+  },
+  "peerDependencies": {
+    "@neosmart/ssclient": "^2.0.0"
+  }
+}
