@@ -104,7 +104,7 @@ export class SecretsManager {
     /**
      * Load a SecureStore vault from a JSON string or object, decrypting with the provided decryption key.
      */
-    public static async loadWithKey(vaultData: string | VaultData, key: string): Promise<SecretsManager> {
+    public static async loadWithKey(vaultData: string | VaultData, key: Uint8Array | string): Promise<SecretsManager> {
         return await SecretsManager.load(vaultData, KeySource.fromKey(key));
     }
 
