@@ -1,3 +1,5 @@
+const MASTER_KEY_LEN = 16 * 2;
+
 /**
  * An encrypted entry in the SecureStore JSON vault
  */
@@ -11,18 +13,19 @@ export interface VaultEntry {
  * SecureStore secrets vault schema
  */
 export interface VaultData {
-    readonly version?: number;
-    readonly iv?: string;
-    readonly sentinel?: VaultEntry;
-    readonly secrets?: Record<string, VaultEntry>;
+    readonly version: number;
+    readonly iv: string;
+    readonly sentinel: VaultEntry;
+    readonly secrets: Record<string, VaultEntry>;
 }
+type SafeVaultData = {
+  [K in keyof VaultData]: VaultData[K] | null;
+};
 
 /**
  * An abstraction over SecureStore password- or key-based decryption
  */
 export class KeySource {
-    private static readonly KEY_LEN = 16 * 2;
-
     public static readonly TYPE_PASSWORD = 'password';
     public static readonly TYPE_KEY = 'key';
 
@@ -42,7 +45,7 @@ export class KeySource {
     }
 
     /**
-     * Load decryption key from a raw key.
+     * Load decryption key from a decryption key.
      * Handles raw binary (Uint8Array), Arrays, and ASCII-armored keys.
      */
     public static fromKey(key: Uint8Array | number[] | string): KeySource {
@@ -67,7 +70,7 @@ export class KeySource {
             buffer = key;
         }
 
-        if (buffer.length === this.KEY_LEN) {
+        if (buffer.length === MASTER_KEY_LEN) {
             return new KeySource(this.TYPE_KEY, buffer);
         }
 
@@ -76,11 +79,10 @@ export class KeySource {
 }
 
 /**
- * SecretsManager instances can be used to load and decrypt secrets from SecureStore vaults.
+ * SecretsManager instances are used to load and decrypt secrets from SecureStore vaults.
  */
 export class SecretsManager {
     private static readonly PBKDF2_ROUNDS = 256000;
-    private static readonly KEY_LEN = 16 * 2;
 
     private readonly aesKey: CryptoKey;
     private readonly hmacKey: CryptoKey;
@@ -110,17 +112,17 @@ export class SecretsManager {
      * Load a SecureStore vault from a JSON string or object.
      */
     public static async load(vaultData: string | VaultData, keySource: KeySource): Promise<SecretsManager> {
-        const data: VaultData = typeof vaultData === 'string' ? JSON.parse(vaultData) : vaultData;
+        const vault: SafeVaultData = typeof vaultData === 'string' ? JSON.parse(vaultData) : vaultData;
 
-        if ((data.version ?? 0) !== 3) {
+        if ((vault.version ?? 0) !== 3) {
             throw new Error("Unsupported SecureStore version. This library supports v3.");
         }
 
         // Derive or load the 32-byte master key
-        const masterKeyBytes = await this.resolveMasterKey(keySource, data.iv ?? null);
+        const masterKeyBytes = await this.resolveMasterKey(keySource, vault.iv ?? null);
 
-        if (masterKeyBytes.byteLength < this.KEY_LEN) {
-            throw new Error(`Invalid key length. Expected at least ${this.KEY_LEN} bytes.`);
+        if (masterKeyBytes.byteLength < MASTER_KEY_LEN) {
+            throw new Error(`Invalid key length. Expected at least ${MASTER_KEY_LEN} bytes.`);
         }
 
         // Split master key (16-byte AES-128 key, 16-byte HMAC-SHA1 key)
@@ -132,15 +134,15 @@ export class SecretsManager {
         const hmacKey = await crypto.subtle.importKey("raw", hmacRaw, { name: "HMAC", hash: "SHA-1" }, false, ["verify", "sign"]);
 
         // Verify the correct password was provided via the (optional) sentinel
-        if (data.sentinel) {
+        if (vault.sentinel) {
             try {
-                await this.decryptEntry(data.sentinel, aesKey, hmacKey);
+                await this.decryptEntry(vault.sentinel, aesKey, hmacKey);
             } catch {
                 throw new Error("SecureStore load failure: invalid key or password.");
             }
         }
 
-        return new SecretsManager(aesKey, hmacKey, data.secrets ?? {});
+        return new SecretsManager(aesKey, hmacKey, vault.secrets ?? {});
     }
 
     /**
@@ -196,8 +198,8 @@ export class SecretsManager {
             return source.value;
         }
 
-        if (base64Salt === null) {
-            throw new Error("Vault missing root 'iv' (salt) required for password decryption.");
+        if (!base64Salt) {
+            throw new Error("Vault missing vault property 'iv' required for password decryption.");
         }
 
         const salt = this.base64ToBytes(base64Salt);
@@ -217,7 +219,7 @@ export class SecretsManager {
                 hash: "SHA-1"
             },
             baseKey,
-            this.KEY_LEN * 8
+            MASTER_KEY_LEN * 8
         );
 
         return new Uint8Array(derivedBits);
