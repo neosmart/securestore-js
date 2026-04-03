@@ -1,3 +1,5 @@
+[![NPM Version](https://img.shields.io/npm/v/%40neosmart%2Fsecurestore)](https://www.npmjs.com/package/@neosmart/securestore) ![NPM Type Definitions](https://img.shields.io/npm/types/%40neosmart%2Fsecurestore)
+
 # SecureStore JS library
 
 This repository/package houses a TypeScript/JavaScript implementation of the cross-platform, language-agnostic [SecureStore secrets specification](https://neosmart.net/SecureStore). In particular, this library may be used for interacting with [SecureStore](https://github.com/neosmart/securestore-rs) secrets containers, providing an easy-to-use and idiomatic interface for loading SecureStore containers and decrypting/retrieving secrets from within your existing JavaScript codebase, and is compatible with both frontend (à la browser) and backend (à la node/bun) code (though you're most likely to use it on the backend).
