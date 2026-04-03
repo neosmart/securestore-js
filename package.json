@@ -1,8 +1,11 @@
 {
   "name": "@neosmart/securestore",
   "version": "1.0.0",
-  "files": ["dist/SecureStore*"],
   "type": "module",
+  "files": [
+      "dist/SecureStore*.js",
+      "dist/SecureStore*.d.ts"
+  ],
   "exports": {
     ".": {
       "node": {
