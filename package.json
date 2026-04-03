@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "files": [
-      "dist/SecureStore*.js",
-      "dist/SecureStore*.d.ts"
+    "dist/*.js",
+    "dist/*.d.ts",
+    "!dist/*test*"
   ],
   "exports": {
     ".": {
@@ -37,15 +38,15 @@
   },
   "funding": "https://mqudsi.com/donate/",
   "scripts": {
-    "prepublishOnly": "npm run clean && npm run build",
+    "prepack": "npm run clean && npm run build",
     "clean": "node -e \"['README.pdf', 'README.html'].forEach(f => require('fs').rmSync(f, { force: true }))\"",
     "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "typescript": "^6"
+    "typescript": "^6.0.2"
   },
   "peerDependencies": {
-    "@neosmart/ssclient": "^2.0.0"
+    "@neosmart/ssclient": "^2.0.1-beta.0"
   }
 }
