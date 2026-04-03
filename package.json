@@ -37,7 +37,8 @@
   },
   "funding": "https://mqudsi.com/donate/",
   "scripts": {
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build",
+    "clean": "node -e \"['README.pdf', 'README.html'].forEach(f => require('fs').rmSync(f, { force: true }))\"",
     "build": "tsc"
   },
   "devDependencies": {
