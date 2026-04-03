@@ -79,7 +79,7 @@ for (const key of sman.keys()) {
 
 #### Notes on browser use
 
-The `SecretsManager.fromFile()`, `KeySource.fromKeyFile()`, and `{ keyFile: string }` `AuthOptions` variants are only available in the backend (when using with node or bun). If using this library from the web or in another environment, you'll need to manually load the store contents and then use `SecretsManager.fromJSON()` instead:
+The `SecretsManager.fromFile()` and `KeySource.fromKeyFile()` methods and the `{ keyFile: string }` `AuthOptions` variant are only available in the backend (when using with node or bun). If using this library from the web or in another environment, you'll need to manually load the store contents and then use `SecretsManager.fromJSON()` instead:
 
 ```typescript
 import { SecretsManager } from "@neosmart/securestore";
