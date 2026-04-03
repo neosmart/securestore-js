@@ -51,7 +51,7 @@ SecretsManager.fromFile = async (path, auth) => {
 	} catch (err) {
 		throw new Error(`Error loading SecureStore vault from path ${path}`, { cause: err });
 	}
-	return SecureStore.SecretsManager.fromJSON(vaultJson, <any> auth);
+	return SecureStore.SecretsManager.fromJSON(vaultJson, auth);
 };
 
 // @ts-expect-error forcibly access private member to patch
