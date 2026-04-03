@@ -106,26 +106,28 @@ While it is **strongly recommended** to only load secrets programmatically with 
 
 The `SecureStore` library provides a high-level interface for decrypting and accessing secrets stored in SecureStore v3 vaults.
 
+The following types/classes/interfaces are exposed by this library:
+
 ### `SecretsManager`
 The primary interface for interacting with an encrypted vault.
 
-*   **`fromJSON(json, auth)`** — `Universal`
+*   **`fromJSON(json, auth)`** — **Universal**
     Initializes the manager from a raw JSON string (the contents of the SecureStore `secrets.json`).
-*   **`fromObject(data, auth)`** — `Universal`
+*   **`fromObject(data, auth)`** — **Universal**
     Initializes the manager from the pre-parsed `VaultData` contents of `secrets.json`.
 *   **`fromFile(path, auth)`** — **Backend Only**
     Asynchronously reads and decrypts a vault file from the disk.
-*   **`get(name)`** — `Universal`
+*   **`get(name)`** — **Universal**
     Retrieves and decrypts a specific secret by its key. Returns `null` if not found.
-*   **`keys()`** — `Universal`
+*   **`keys()`** — **Universal**
     Returns an array with the names/keys of all secrets stored within the vault.
 
 ### `KeySource`
 An abstraction for the credentials used to unlock a vault.
 
-*   **`fromPassword(password)`** — `Universal`
+*   **`fromPassword(password)`** — **Universal**
     Derives decryption keys from the provided password. Primarily for interactive use.
-*   **`fromKey(key)`** — `Universal`
+*   **`fromKey(key)`** — **Universal**
     Loads a "raw" master key, loaded from the SecureStore encryption key into a `Uint8Array` or ASCII-armored string.
 *   **`fromKeyFile(path)`** — **Backend Only**
     Reads a master key from the filesystem directly.
@@ -135,7 +137,11 @@ The configuration object used during initialization to specify how vault decrypt
 
 | Property | Type | Env | Description |
 | :--- | :--- | :--- | :--- |
-| `password` | `string` | `Universal` | Decrypt using a password string. |
-| `key` | `Uint8Array` | `Universal` | Decrypt using a raw binary key. |
-| `keySource` | `KeySource` | `Universal` | Decrypt using a pre-constructed `KeySource` instance. |
+| `password` | `string` | **Universal** | Decrypt using a password string. |
+| `key` | `Uint8Array` | **Universal** | Decrypt using a raw binary key. |
+| `keySource` | `KeySource` | **Universal** | Decrypt using a pre-constructed `KeySource` instance. |
 | `keyFile` | `string` | **Backend** | Path to a file containing the decryption key. |
+
+## Implementation Notes
+
+This library is implemented using the Web Crypto standard and does not perform any cryptography in the runtime or using JavaScript sources – all cryptographic primitives are implemented by the browser/runtime for security and performance. This library is currently - and for the foreseeable future - intentionally dependency-free. Please refer to [the main (rust) SecureStore repo/implementation](https://github.com/neosmart/securestore-rs) for any protocol-specific or crypto-related questions or matters.
