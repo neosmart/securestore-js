@@ -19,7 +19,7 @@ export interface VaultData {
     readonly secrets: Record<string, VaultEntry>;
 }
 type SafeVaultData = {
-  [K in keyof VaultData]: VaultData[K] | null;
+  [K in keyof VaultData]: VaultData[K] | undefined;
 };
 
 /**
