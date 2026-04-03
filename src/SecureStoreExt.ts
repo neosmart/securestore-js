@@ -26,7 +26,7 @@ declare module "./SecureStore.js" {
 	}
 }
 
-SecureStore.KeySource.fromKeyFile = async (path: string) => {
+KeySource.fromKeyFile = async (path: string) => {
 	if (!existsSync(path)) {
 		throw new Error(`SecureStore key file not found at ${path}`);
 	}
