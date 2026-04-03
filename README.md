@@ -89,7 +89,7 @@ import { SecretsManager } from "@neosmart/securestore";
 const vaultJson = "..."; // the contents of secure/secrets.json
 const vaultKey = "..."; // the contents of secure/secrets.key
 const sman = await SecretsManager.fromJSON(vaultJson,
-                      { key: "..." });
+                      { key: vaultKey });
 ```
 
 Or, to decrypt with a password interactively:
