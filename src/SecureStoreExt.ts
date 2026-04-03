@@ -33,7 +33,7 @@ SecureStore.KeySource.fromKeyFile = async (path: string) => {
 
 	let keyData: string;
 	try {
-		keyData = await readFile(path, "utf8");
+		keyData = await readFile(path, "utf-8");
 	} catch (err) {
 		throw new Error(`Unable to load SecureStore key from path ${path}`, { cause: err });
 	}
